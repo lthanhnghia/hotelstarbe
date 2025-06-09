@@ -49,7 +49,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration configuration = new CorsConfiguration();
-                    configuration.setAllowedOriginPatterns(List.of("http://localhost:*")); // Mẫu
+                    configuration.setAllowedOriginPatterns(List.of("http://localhost:*","https://hotelstar.vercel.app")); // Mẫu
 
                     configuration.setAllowedMethods(
                             Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
