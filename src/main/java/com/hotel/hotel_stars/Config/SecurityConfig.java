@@ -347,7 +347,8 @@ public class SecurityConfig {
                                         "/api/room/list-room-id","/api/room/room-occupancy",
                                         "/api/chat",
                                         "/api/hotel/getInfoHotel",
-                                        "/api/ping"
+                                        "/api/ping",
+                                        "/api/demo"
                                 )
                                 .permitAll()
 

@@ -18,4 +18,9 @@ public class ChatController {
     public String ping() {
         return "pong";
     }
+    @GetMapping("/demo")
+    public String keepAlive() {
+        return "demo";
+    }
+
 }
