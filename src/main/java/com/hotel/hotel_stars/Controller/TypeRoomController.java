@@ -185,8 +185,8 @@ public class TypeRoomController {
 
     @GetMapping("/find-type-room")
     public ResponseEntity<?> findTypeRoom(
-            @RequestParam String startDate,
-            @RequestParam String endDate,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
             @RequestParam Integer guestLimit,
             @RequestParam (defaultValue = "0", required = false) Integer typeRoomID,
             @RequestParam(defaultValue = "1") Integer page, // Mặc định là trang 1

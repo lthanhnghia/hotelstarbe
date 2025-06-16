@@ -298,7 +298,8 @@ public interface TypeRoomRepository extends JpaRepository<TypeRoom, Integer> {
                 type_bed ON tr.type_bed_id = type_bed.id
 
             GROUP BY
-                tr.id
+                tr.id,
+                type_bed.bed_name
              """, nativeQuery = true)
     Page<Object[]> findAllListTypeRoom(Pageable pageable);
 
