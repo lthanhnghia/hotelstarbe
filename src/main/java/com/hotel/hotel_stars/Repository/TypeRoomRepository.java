@@ -84,7 +84,7 @@ public interface TypeRoomRepository extends JpaRepository<TypeRoom, Integer> {
                 (TIMESTAMPDIFF(DAY, :startDate, :endDate) * tr.price) AS estCost,
                 GROUP_CONCAT(DISTINCT tpi.image_name) AS image_name,
                 tr.describes,
-                type_bed.bed_name
+                GROUP_CONCAT(DISTINCT type_bed.bed_name) AS bed_name
             FROM
                 type_room tr
             JOIN
@@ -117,7 +117,7 @@ public interface TypeRoomRepository extends JpaRepository<TypeRoom, Integer> {
                     )  AND b_inner.status_id NOT IN (6)
                 )AND (:typeRoomID IS NULL OR tr.id = :typeRoomID)
             GROUP BY
-                tr.id
+                 tr.id
             ORDER BY
                 (CASE
                     WHEN tr.guest_limit = :guestLimit THEN 1
