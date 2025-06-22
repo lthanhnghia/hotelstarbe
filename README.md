@@ -7,6 +7,10 @@ Phát triển bằng **Java Spring Boot** (backend) và **ReactJS** (frontend).
 
 - 🔗 Giao diện người dùng (FE): [https://hotelstar.vercel.app/client/home](https://hotelstar.vercel.app/client/home)
 ---
+### ⚠️ Lưu ý khi truy cập demo
+Trang web đôi khi load chậm hoặc không truy cập được do Render tự động sleep sau một thời gian không hoạt động (free tier).
+Dù đã cài đặt UptimeRobot để gọi API định kỳ, nhưng tình trạng "sleep" vẫn có thể xảy ra.
+Vui lòng thử lại sau vài phút nếu gặp lỗi.
 
 ## ⚙️ Công nghệ sử dụng
 
@@ -40,3 +44,5 @@ Phát triển bằng **Java Spring Boot** (backend) và **ReactJS** (frontend).
 ---
 
 ### 📁 Thông tin kết nối CSDL (cấu hình sẵn trong `application.properties`)
+
+
