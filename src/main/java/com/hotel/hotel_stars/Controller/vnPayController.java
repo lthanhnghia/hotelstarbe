@@ -98,7 +98,7 @@ System.out.println();
                 String paymentStatuss = "success";
                 String messages = "Bạn đã đặt phòng thành công vui lòng vào email để xem chi tiết đơn đặt hàng và file pdf đã được lưu vào máy của quý khách";
                 redirectUrl = String.format(
-                        "http://localhost:3000/client/booking-room?status=%s&message=%s",
+                        "https://hotelstar.vercel.app/client/booking-room?status=%s&message=%s",
                         URLEncoder.encode(paymentStatuss, "UTF-8"),
                         URLEncoder.encode(messages, "UTF-8")
                 );
@@ -131,7 +131,7 @@ StatusBooking statusBooking1 = statusBookingRepository.findById(6).get();
             String messages = "Thanh toán thất bại";
             String redirectUrl = null;
             redirectUrl = String.format(
-                    "http://localhost:3000/client/booking-room?status=%s&message=%s",
+                    "https://hotelstar.vercel.app/client/booking-room?status=%s&message=%s",
                     URLEncoder.encode(paymentStatuss, "UTF-8"),
                     URLEncoder.encode(messages, "UTF-8")
             );

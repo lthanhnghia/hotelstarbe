@@ -316,52 +316,7 @@ public class BookingController {
         return ResponseEntity.ok(bookings);
     }
 
-    public List<BookingHistoryDTOs> getBookingsByAccountId(Integer accountId) {
-        // Lấy danh sách dữ liệu cơ bản
-        // nghia, hàm này được push sáng ngày 18 tháng 12 năm 2024
-        List<Object[]> results = bookingRepository.findBookingsByAccountId(accountId);
 
-        return results.stream()
-                .map(objects -> {
-                    // Lấy Booking từ repository bằng bk_id (objects[0])
-                    Booking booking = bookingRepository.findById((Integer) objects[0])
-                            .orElseThrow(() -> new RuntimeException("Booking not found with id: " + objects[0]));
-
-                    // Truy xuất thông tin bổ sung từ Booking
-                    Integer methodPaymentId = booking.getMethodPayment().getId();
-                    String methodPaymentName = booking.getMethodPayment().getMethodPaymentName();
-                    String discountName = booking.getDiscountName();
-                    Double discountPercent = booking.getDiscountPercent();
-                    Integer statusBookingID = booking.getStatus().getId();
-                    // Tạo BookingHistoryDTOs với thông tin đầy đủ
-                    return new BookingHistoryDTOs(
-                            (Integer) objects[0], // bk_id
-                            (String) objects[1], // bkformat
-                            (String) objects[2], // create_at
-                            (String) objects[3], // start_at
-                            (String) objects[4], // end_at
-                            (String) objects[5], // fullname
-                            (String) objects[6], // avatar
-                            (Integer) objects[7], // statusBkID
-                            (String) objects[8], // statusBkName
-                            (Integer) objects[9], // iv_id
-                            (Double) objects[10], // totalRoom
-                            (Integer) objects[11], // fb_id
-                            (String) objects[12], // content
-                            (Integer) objects[13], // stars
-                            (String) objects[14], // roomInfo
-                            (String) objects[15], // image
-                            (String) objects[16], // combinedServiceNames
-                            (Double) objects[17], // combinedTotalServices
-                            (Double) objects[18], // totalAmount
-                            methodPaymentId, // Lấy từ Booking
-                            methodPaymentName, // Lấy từ Booking
-                            discountName, // Lấy từ Booking
-                            discountPercent, // Lấy từ Booking
-                            statusBookingID);
-                })
-                .collect(Collectors.toList());
-    }
 
     @GetMapping("/booking-by-room/{id}")
     public ResponseEntity<?> getBookingByRoom(@PathVariable("id") Integer id) {

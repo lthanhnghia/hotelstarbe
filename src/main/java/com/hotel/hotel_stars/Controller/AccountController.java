@@ -211,7 +211,7 @@ public class AccountController {
         return ResponseEntity.ok(generateHtmls);
     }
 
-    @PutMapping("changepassword")
+    @PutMapping("/changepassword")
     public ResponseEntity<?> changepass(@RequestBody changePasswordModel changePasswordModels) {
         Map<String, String> response = new HashMap<String, String>();
         response = accountService.changeUpdatePass(changePasswordModels);
@@ -255,28 +255,6 @@ public class AccountController {
         }
     }
 
-    public boolean updateProfiles(accountModel accountModels) {
-        if (accountModels == null) {
-            return false;
-        }
-        Optional<Account> getAccount = accountRepository.findByUsername(accountModels.getUsername());
-        if (getAccount.isEmpty()) {
-            System.out.println("Tài khoản không tồn tại!");
-            return false;
-        }
-        Account account = getAccount.get();
-        System.out.println("Tài khoản được tìm thấy: " + account.getUsername());
-        System.out.println("ID được tìm thấy: " + account.getId());
-
-        account.setEmail(accountModels.getEmail());
-        account.setFullname(accountModels.getFullname());
-        account.setGender(accountModels.getGender());
-        account.setPhone(accountModels.getPhone());
-        account.setAvatar(accountModels.getAvatar());
-
-        accountRepository.save(account);
-        return true;
-    }
 
     public boolean deleteAccountEmployee(Integer id) {
         try {
