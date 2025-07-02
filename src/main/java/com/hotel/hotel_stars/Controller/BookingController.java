@@ -267,7 +267,7 @@ public class BookingController {
                     response = paramServices.messageSuccessApi(201, "success",
                             "Đặt phòng thành công");
                     response.put("vnPayURL",
-                            vnPayService.createOrder(totalAsInt, String.valueOf(bookings.getId()), baseUrl));
+                            vnPayService.createOrder(totalAsInt, String.valueOf(bookings.getId()), baseUrl,request));
 
                 }
                 return ResponseEntity.status(HttpStatus.CREATED).body(response);
