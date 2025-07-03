@@ -37,21 +37,24 @@ public class VNPayService {
         vnp_Params.put("vnp_Locale", locate);
 
         // ✅ Ghép URL Return chuẩn
-        String vnp_ReturnUrl = urlReturn.endsWith("/")
-                ? urlReturn.substring(0, urlReturn.length() - 1) + VNPayConfig.vnp_Returnurl
-                : urlReturn + VNPayConfig.vnp_Returnurl;
-        vnp_Params.put("vnp_ReturnUrl", vnp_ReturnUrl);
+
+        vnp_Params.put("vnp_ReturnUrl", VNPayConfig.vnp_Returnurl);
         vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
 
         // ✅ Thời gian tạo và hết hạn
-        Calendar cld = Calendar.getInstance(); ////akjfan
+        // ✅ Thời gian tạo và hết hạn - CHUẨN múi giờ VN
+        TimeZone timeZone = TimeZone.getTimeZone("Asia/Ho_Chi_Minh"); // ép về giờ Việt Nam
+        Calendar cld = Calendar.getInstance(timeZone);
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+        formatter.setTimeZone(timeZone); // cũng phải set formatter về VN
+
         String vnp_CreateDate = formatter.format(cld.getTime());
         vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
 
         cld.add(Calendar.MINUTE, 15);
         String vnp_ExpireDate = formatter.format(cld.getTime());
         vnp_Params.put("vnp_ExpireDate", vnp_ExpireDate);
+
 
         // ✅ Build data
         List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
