@@ -17,10 +17,7 @@ public class VNPayService {
         String vnp_TxnRef = VNPayConfig.getRandomNumber(8);
 
         // ✅ Lấy IP động
-        String vnp_IpAddr = request.getHeader("X-FORWARDED-FOR");
-        if (vnp_IpAddr == null) {
-            vnp_IpAddr = request.getRemoteAddr();
-        }
+        String vnp_IpAddr = request.getRemoteAddr();
 
         String vnp_TmnCode = VNPayConfig.vnp_TmnCode;
         String orderType = "other";
@@ -47,8 +44,7 @@ public class VNPayService {
         vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
 
         // ✅ Thời gian tạo và hết hạn
-        TimeZone timeZone = TimeZone.getTimeZone("Asia/Ho_Chi_Minh");
-        Calendar cld = Calendar.getInstance(timeZone);
+        Calendar cld = Calendar.getInstance();
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
         String vnp_CreateDate = formatter.format(cld.getTime());
         vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
