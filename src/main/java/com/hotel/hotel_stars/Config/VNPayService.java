@@ -44,7 +44,7 @@ public class VNPayService {
         vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
 
         // ✅ Thời gian tạo và hết hạn
-        Calendar cld = Calendar.getInstance();
+        Calendar cld = Calendar.getInstance(); ////akjfan
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
         String vnp_CreateDate = formatter.format(cld.getTime());
         vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
