@@ -42,7 +42,7 @@ public class VNPayService {
         vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
 
         // ✅ Thời gian tạo và hết hạn
-        // ✅ Thời gian tạo và hết hạn - CHUẨN múi giờ VN
+        // ✅ Thời gian tạo và hết hạn - CHUẨN múi giờ VN,,
         TimeZone timeZone = TimeZone.getTimeZone("Asia/Ho_Chi_Minh"); // ép về giờ Việt Nam
         Calendar cld = Calendar.getInstance(timeZone);
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
