@@ -27,6 +27,8 @@ import java.util.Random;
 
 import javax.imageio.ImageIO;
 
+import com.hotel.hotel_stars.DTO.ApiResponseDto;
+import com.hotel.hotel_stars.DTO.StatusResponseDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -73,11 +75,6 @@ public class paramService {
             boolean emailVerified = payload.getEmailVerified();
             String name = (String) payload.get("name");
             String pictureUrl = (String) payload.get("picture");
-            System.out.println("userId: " + userId);
-            System.out.println("email: " + email);
-            System.out.println("emailVerified: " + emailVerified);
-            System.out.println("name: " + name);
-            System.out.println("pictureUrl: " + pictureUrl);
             accounts.setUsername(email);
             accounts.setEmail(email);
             accounts.setAvatar(pictureUrl);
@@ -98,7 +95,10 @@ public class paramService {
         response.put("message", message);
         return response;
     }
+    public ApiResponseDto responseDtoApi(Integer code, String status, String message) {
 
+        return new ApiResponseDto(code, status, message);
+    }
     public String generateTemporaryPassword() {
         Random random = new Random();
         StringBuilder password = new StringBuilder();
@@ -113,7 +113,6 @@ public class paramService {
 
     public Boolean sendEmails(String to, String subject, String body) {
         MimeMessage message = emailSender.createMimeMessage();
-
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true); // true = multipart
             helper.setTo(to);
@@ -126,7 +125,21 @@ public class paramService {
             return null;
         }
     }
+    public ApiResponseDto SendEmails(String to, String subject, String body) {
+        MimeMessage message = emailSender.createMimeMessage();
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(message, true); // true = multipart
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(body, true); // true để chỉ định rằng nội dung là HTML
+            emailSender.send(message);
+            return new ApiResponseDto(200,"success","Gửi email thành công");
+        } catch (MessagingException e) {
+            e.printStackTrace();
+            return new ApiResponseDto(400, "error", "Không thể gửi email: " + e.getMessage());
 
+        }
+    }
     public Instant stringToInstant(String dateString) {
         try {
             // Định dạng đầy đủ với thời gian và múi giờ
@@ -326,7 +339,7 @@ public class paramService {
                 + "            </div>\n"
                 + "        </div>\n"
                 + "        <div class=\"pdf\">\n"
-                + "            <a href=\"http://localhost:8080/api/booking/downloadPdf?id=" + booking.getId() + "\">Tải xuống pdf</a>\n"
+                + "            <a href=\"https://hotelstarbe.onrender.com/api/booking/downloadPdf?id=" + booking.getId() + "\">Tải xuống pdf</a>\n"
                 + "        </div>\n"
                 + "    </div>\n"
                 + "</body>\n"
@@ -382,7 +395,7 @@ public class paramService {
                 + "        <tr><th>Tổng tiền</th><td>" + total + "</td></tr>\n"
                 + "    </table>\n"
                 + "    <p>Để xác nhận đơn đặt phòng, vui lòng nhấn nút bên dưới:</p>\n"
-                + "    <a href=\"http://localhost:8080/api/booking/confirmBooking?token=" + token + "\" class=\"button\">Xác Nhận Đặt Phòng</a>\n"
+                + "    <a href=\"https://hotelstarbe.onrender.com/api/booking/confirmBooking?token=" + token + "\" class=\"button\">Xác Nhận Đặt Phòng</a>\n"
                 + "    <p>Trân trọng,<br>Hotel Start</p>\n"
                 + "</body>\n"
                 + "</html>";
@@ -558,7 +571,7 @@ public class paramService {
                 + "    <p>Xin chào Bạn</p>\n"
                 + "    <p>Bạn đã yêu cầu thay đổi mật khẩu cho tài khoản của mình tại Hotel Start.</p>\n"
                 + "    <p>Để xác nhận việc thay đổi mật khẩu, vui lòng nhấp vào liên kết bên dưới:</p>\n"
-                + "    <p><a href=\"http://localhost:8080/api/account/updatePassword?token=" + token + "\" class=\"button\" style=\"color: white;\">Xác Nhận Đổi Mật Khẩu</a></p>\n"
+                + "    <p><a href=\"https://hotelstarbe.onrender.com/api/account/updatePassword?token=" + token + "\" class=\"button\" style=\"color: white;\">Xác Nhận Đổi Mật Khẩu</a></p>\n"
                 + "    <p>Nếu bạn không yêu cầu thay đổi mật khẩu, xin vui lòng bỏ qua email này hoặc liên hệ với chúng tôi để được hỗ trợ.</p>\n"
                 + "    <p>Trân trọng,<br>Hotel Start</p>\n"
                 + "</div>\n"

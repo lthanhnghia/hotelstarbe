@@ -9,8 +9,10 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.hotel.hotel_stars.DTO.Select.PaginatedResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -367,15 +369,22 @@ public class TypeRoomService {
 //        }).collect(Collectors.toList()); // Collect the results into a List
 //    }
 
-    public Page<FindTypeRoomDto> getRoom(String startDate, String endDate, Integer guestLimit, Integer typeRoomID, Pageable pageable) {
+    public PaginatedResponse<FindTypeRoomDto> getRoom(String startDate, String endDate, Integer guestLimit, Integer typeRoomID, Integer page,Integer size) {
         // Gọi repository với phân trang
-
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Integer processedTypeRoomID = Optional.ofNullable(typeRoomID)
+                .filter(id -> id != 0)
+                .orElse(null);
+        boolean isValidTypeRoomID = typeRoomRepository.existsById(typeRoomID);
+        if (!isValidTypeRoomID) {
+            processedTypeRoomID = null; // Gán NULL nếu typeRoomID không hợp lệ
+        }
         LocalDate startDates = paramServices.convertStringToLocalDate(startDate);
         LocalDate endDates = paramServices.convertStringToLocalDate(endDate);
-        Page<Object[]> result = typeRoomRepository.findAvailableRoomsWithPagination(startDates, endDates, guestLimit, typeRoomID, pageable);
+        Page<Object[]> result = typeRoomRepository.findAvailableRoomsWithPagination(startDates, endDates, guestLimit, processedTypeRoomID, pageable);
 
         // Chuyển đổi kết quả từ Object[] thành DTO
-        return result.map(results -> {
+        Page<FindTypeRoomDto> typeRoomPage = result.map(results -> {
             String roomId = (String) results[0];
             List<Integer> listRoomId = Arrays.stream(roomId.split(",")).map(Integer::valueOf).toList();
             String roomName = (String) results[1];
@@ -408,6 +417,11 @@ public class TypeRoomService {
                     amenitiesList, estCost, listImages, describe, bedNameList
             );
         });
+
+        long totalItems = typeRoomPage.getTotalElements();
+        int totalPages = typeRoomPage.getTotalPages();
+        PaginatedResponse<FindTypeRoomDto> response = new PaginatedResponse<>(typeRoomPage.getContent(), totalItems, totalPages, page, size);
+      return response;
     }
 
 

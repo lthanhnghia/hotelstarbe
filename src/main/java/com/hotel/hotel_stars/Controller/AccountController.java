@@ -2,7 +2,9 @@ package com.hotel.hotel_stars.Controller;
 
 import java.util.*;
 
+import com.hotel.hotel_stars.DTO.ApiResponseDto;
 import com.hotel.hotel_stars.DTO.StatusResponseDto;
+import com.hotel.hotel_stars.DTO.selectDTO.ResponseUsersDTO;
 import com.hotel.hotel_stars.Entity.Account;
 import com.hotel.hotel_stars.Entity.Booking;
 import com.hotel.hotel_stars.Exception.ErrorsService;
@@ -81,36 +83,15 @@ public class AccountController {
 
     @PostMapping("/getTokenGG")
     public ResponseEntity<?> getToken(@RequestBody accountModel accountModels) {
-        Map<String, String> response = new HashMap<String, String>();
-        System.out.println("mã token gg" + accountModels.getEmail());
-        String token = accountService.loginGG(accountModels.getEmail());
-        if (token == null) {
-            response = paramServices.messageSuccessApi(400, "error", "Email này đã tồn tại");
-            response.put("token", null);
-            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-
-        System.out.println(token + "  token22");
-        String result = (token != null) ? token : null;
-        response.put("token", result);
-        return ResponseEntity.ok(response);
+        ResponseUsersDTO response = accountService.loginGG(accountModels.getEmail());
+        System.out.println(response.getMessage());
+        return ResponseEntity.status(response.getCode()).body(response);
     }
 
     @PostMapping("/register")
     public ResponseEntity<?> registerAccount(@Valid @RequestBody accountModel accountModels) {
-        StatusResponseDto statusResponseDto = errorsServices.errorRegister(accountModels);
-        if (statusResponseDto != null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(statusResponseDto);
-        }
-        Map<String, String> response = new HashMap<String, String>();
-        boolean flag = accountService.addUser(accountModels);
-        if (flag) {
-            response = paramServices.messageSuccessApi(201, "success", "Đăng ký thành công");
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } else {
-            response = paramServices.messageSuccessApi(400, "error", "Đăng ký thất bại");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response); // 400 Bad Request for failure
-        }
+        ApiResponseDto response = accountService.addUser(accountModels);
+        return ResponseEntity.status(response.getCode()).body(response);
     }
 
     @PostMapping("/loginToken")
@@ -188,16 +169,12 @@ public class AccountController {
 
     @PostMapping("/sendEmail")
     public ResponseEntity<?> sendEmailEmployee(@RequestBody Map<String, String> request) {
-        Map<Object, Object> response = new HashMap<>();
+
         String email = request.get("email");
         System.out.println(email);
-        Boolean result = accountService.sendEmailUpdatePassword(email);
-        if (result == false) {
-            response.put("message", "Email Không tồn tại");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-        response.put("message", "Email sent successfully");
-        return ResponseEntity.ok(response);
+        ApiResponseDto result = accountService.sendEmailUpdatePassword(email);
+        System.out.println(result.getCode());
+        return ResponseEntity.status(result.getCode()).body(result);
     }
 
     @GetMapping("/updatePassword")
@@ -213,13 +190,8 @@ public class AccountController {
 
     @PutMapping("/changepassword")
     public ResponseEntity<?> changepass(@RequestBody changePasswordModel changePasswordModels) {
-        Map<String, String> response = new HashMap<String, String>();
-        response = accountService.changeUpdatePass(changePasswordModels);
-        if (response.get("code").equals(String.valueOf(400))) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        } else {
-            return ResponseEntity.ok(response);
-        }
+        ApiResponseDto response = accountService.changeUpdatePass(changePasswordModels);
+        return ResponseEntity.status(response.getCode()).body(response);
     }
 
     @GetMapping("account-by-id/{username}")
@@ -227,23 +199,7 @@ public class AccountController {
         return ResponseEntity.ok(accountService.getAccountInfoByUsername(username));
     }
 
-    @PutMapping("/updateAccount")
-    public ResponseEntity<?> update(@Valid @RequestBody accountModel accountModels) {
-        StatusResponseDto statusResponseDto = errorsServices.errorUpdateProfile(accountModels);
-        if (statusResponseDto != null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(statusResponseDto);
-        }
-        Map<String, String> response = new HashMap<String, String>();
-        boolean flag = accountService.updateProfiles(accountModels);
-        if (flag) {
-            response = paramServices.messageSuccessApi(201, "success", "cập nhật thành công");
-            response.put("token", jwtService.generateToken(accountModels.getUsername()));
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } else {
-            response = paramServices.messageSuccessApi(400, "error", "cập nhật thất bại");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-    }
+
 
     @DeleteMapping("/deleteAccount/{id}")
     public StatusResponseDto delete(@PathVariable Integer id) {
@@ -275,19 +231,9 @@ public class AccountController {
 
     @PutMapping("/updateAccountCustomer")
     public ResponseEntity<?> updateProfile(@Valid @RequestBody accountModel accountModels) {
-        StatusResponseDto statusResponseDto = errorsServices.errorUpdateProfile(accountModels);
-        if (statusResponseDto != null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(statusResponseDto);
-        }
-        Map<String, String> response = new HashMap<String, String>();
-        boolean flag = accountService.updateProfileCustomer(accountModels);
-        if (flag) {
-            response = paramServices.messageSuccessApi(201, "success", "cập nhật thành công");
-            response.put("token", jwtService.generateToken(accountModels.getUsername()));
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } else {
-            response = paramServices.messageSuccessApi(400, "error", "cập nhật thất bại");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
+
+        ResponseUsersDTO responseDto = accountService.updateProfileCustomer(accountModels);
+
+        return ResponseEntity.status(responseDto.getCode()).body(responseDto);
     }
 }

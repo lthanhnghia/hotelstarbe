@@ -10,8 +10,8 @@ import com.hotel.hotel_stars.DTO.Select.PaymentInfoDTO;
 import com.hotel.hotel_stars.DTO.Select.ReservationInfoDTO;
 import com.hotel.hotel_stars.DTO.StatusResponseDto;
 import com.hotel.hotel_stars.DTO.selectDTO.BookingHistoryDTOs;
+import com.hotel.hotel_stars.DTO.selectDTO.ResponseBookingDTO;
 import com.hotel.hotel_stars.Entity.*;
-import com.hotel.hotel_stars.Exception.CustomValidationException;
 import com.hotel.hotel_stars.Exception.ErrorsService;
 import com.hotel.hotel_stars.Models.DeleteBookingModel;
 import com.hotel.hotel_stars.Models.bookingModel;
@@ -20,12 +20,18 @@ import com.hotel.hotel_stars.Models.bookingRoomModel;
 import com.hotel.hotel_stars.Repository.*;
 import com.hotel.hotel_stars.utils.paramService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Timestamp;
@@ -38,6 +44,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class BookingService {
+	@Lazy
+	@Autowired
+	private ErrorsService errorsServices;
 	@Autowired
 	private BookingRepository bookingRepository;
 	@Autowired
@@ -79,7 +88,8 @@ public class BookingService {
 	private ModelMapper modelMapper;
 	@Autowired
 	private DiscountAccountRepository discountAccountRepositorys;
-
+    @Autowired
+    private VNPayService vnPayService;
 	public List<BookingDetailDTO> getBookingDetailsByAccountId(Integer accountId) {
 		List<Object[]> results = bookingRepository.findBookingDetailsByAccountId(accountId);
 		List<BookingDetailDTO> bookingDetails = new ArrayList<>();
@@ -239,9 +249,10 @@ public class BookingService {
 		return true;
 	}
 
+	@Transactional
 	public Boolean checkCreatbkRoom(Integer bookingId, List<Integer> roomId) { // checkCreatbkRoom nghia
-		// nghia, hàm này được push sáng ngày 18 tháng 12 năm 2024
-		Booking booking = bookingRepository.findById(bookingId).orElseThrow(); // checkCreatbkRoom nghia
+		Booking booking = bookingRepository.findById(bookingId)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy booking ID: " + bookingId));
 		LocalDate startDate = booking.getStartAt().atZone(ZoneId.systemDefault()).toLocalDate();
 		LocalDate endDate = booking.getEndAt().atZone(ZoneId.systemDefault()).toLocalDate();
 		Long days = ChronoUnit.DAYS.between(startDate, endDate);
@@ -264,17 +275,103 @@ public class BookingService {
 				bookingRoomRepository.save(bookingRoom);
 				bookingRepository.save(booking);
 			} catch (Exception e) {
-				e.printStackTrace();
-				throw new RuntimeException(e);
+				throw new RuntimeException("Không thể lưu thông tin phòng ID: " + roomId);
 			}
 		}
 		return true;
 	}
+	public String confirmBookings(Integer id){
+		try{
+			StatusBooking statusBooking = statusBookingRepository.findById(2)
+					.orElseThrow(() -> new RuntimeException("Stautus booking not found"));
+			Booking booking = bookingRepository.findById(id).get();
+			List<BookingRoom> bookingRoomList = booking.getBookingRooms();
+			double total = bookingRoomList.stream().mapToDouble(BookingRoom::getPrice).sum();
+			if (booking.getDiscountPercent() != null && booking.getDiscountPercent() != null) {
+				double discountAmount = total * (booking.getDiscountPercent() / 100);
+				total = total - discountAmount;
+			}
+			String formattedAmount = NumberFormat.getCurrencyInstance(new Locale("vi", "VN")).format(total);
+			LocalDate startDate = paramServices.convertInstallToLocalDate(booking.getStartAt());
+			LocalDate endDate = paramServices.convertInstallToLocalDate(booking.getEndAt());
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-	public Booking sendBookingEmail(bookingModel bookingModels) { // sendBookingEmail nghia
-		// nghia, hàm này được push sáng ngày 18 tháng 12 năm 2024
+			String startDateStr = startDate.format(formatter);
+			String endDateStr = endDate.format(formatter);
+			booking.setStatus(statusBooking);
+			String roomsString = bookingRoomList.stream()
+					.map(bookingRoom -> bookingRoom.getRoom().getRoomName()) // Extract roomName from each BookingRoom
+					.collect(Collectors.joining(", "));
+			String idBk = "BK" + LocalDate.now().format(DateTimeFormatter.ofPattern("ddMMyyyy")) + "TT"
+					+ booking.getId();
+			System.out.println("chuỗi: " + roomsString);
+			try {
+				bookingRepository.save(booking);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			paramServices.sendEmails(booking.getAccount().getEmail(), "thông tin đơn hàng",
+					paramServices.pdfDownload(idBk, booking, startDateStr, endDateStr, formattedAmount, roomsString,
+							paramServices.getImage()));
+			return paramServices.confirmBookings(idBk, booking, startDateStr, endDateStr, formattedAmount,
+					roomsString,
+					paramServices.getImage());
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+    public ResponseEntity<?> downloadFilePFD(Integer id){
+		try{
+			Booking booking = bookingRepository.findById(id).orElseThrow(() -> new RuntimeException("Booking not found"));
+			List<BookingRoom> bookingRoomList = booking.getBookingRooms();
+			double total = bookingRoomList.stream().mapToDouble(BookingRoom::getPrice).sum();
+			if (booking.getDiscountPercent() != null && booking.getDiscountPercent() != null) {
+				double discountAmount = total * (booking.getDiscountPercent() / 100);
+				total = total - discountAmount;
+			}
+			String formattedAmount = NumberFormat.getCurrencyInstance(new Locale("vi", "VN")).format(total);
+			LocalDate startDate = paramServices.convertInstallToLocalDate(booking.getStartAt());
+			LocalDate endDate = paramServices.convertInstallToLocalDate(booking.getEndAt());
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+			String startDateStr = startDate.format(formatter);
+			String endDateStr = endDate.format(formatter);
+			String roomsString = bookingRoomList.stream()
+					.map(bookingRoom -> bookingRoom.getRoom().getRoomName()) // Extract roomName from each BookingRoom
+					.collect(Collectors.joining(", "));
+			String idBk = "BK" + LocalDate.now().format(DateTimeFormatter.ofPattern("ddMMyyyy")) + "TT"
+					+ booking.getId();
+
+
+
+			String filePath = paramServices.generatePdf(
+					paramServices.pdfDownload(idBk, booking, startDateStr, endDateStr, formattedAmount, roomsString,
+							paramServices.getImage()),
+					booking.getAccount().getFullname(), idBk);
+			File file = new File(filePath);
+			HttpHeaders headers = new HttpHeaders();
+			headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + file.getName());
+			return ResponseEntity.ok()
+					.headers(headers)
+					.contentType(MediaType.APPLICATION_PDF)
+					.body(new FileSystemResource(file));
+
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+    public ResponseBookingDTO addBookingOnline(bookingModel bookingModels, HttpServletRequest request){
+		ResponseBookingDTO errorDto = errorsServices.errorBooking(bookingModels);
+		if (errorDto!=null) {
+			return errorDto;
+		}
+		try {
+		//* thêm dữ liệu vào booking, cung cấp thông tin thời gian người đặt
+
 		Booking booking = new Booking(); // sendBookingEmail nghia
-		Optional<Account> accounts = accountRepository.findByUsername(bookingModels.getUserName());
+			Account account = accountRepository.findByUsername(bookingModels.getUserName())
+					.orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản người dùng"));
 		MethodPayment payment = methodPaymentRepository.findById(bookingModels.getMethodPayment()).get();
 		Optional<StatusBooking> statusBooking = (payment.getId() == 1) ? statusBookingRepository.findById(1)
 				: statusBookingRepository.findById(3);
@@ -285,7 +382,7 @@ public class BookingService {
 		Discount discount = (discountRepository.findByDiscountName(bookingModels.getDiscountName()) != null)
 				? discountRepository.findByDiscountName(bookingModels.getDiscountName())
 				: null;
-		booking.setAccount(accounts.get());
+		booking.setAccount(account);
 		booking.setStartAt(starDateIns);
 		booking.setEndAt(endDateIns);
 		booking.setStatus(statusBooking.get());
@@ -300,8 +397,9 @@ public class BookingService {
 		Discount discountBooking = getDiscounts(discountAccount, booking.getCreateAt());
 		booking.setDiscountName((discountBooking != null) ? discountBooking.getDiscountName() : null);
 		booking.setDiscountPercent((discountBooking != null) ? discountBooking.getPercent() : null);
-		try {
-			bookingRepository.save(booking);
+		bookingRepository.save(booking);
+			//*hàm checkCreatbkRoom với trả về là boolean, dùng để thêm dữ liệu vào bookingroom, thêm room vào booking
+
 			if (checkCreatbkRoom(booking.getId(), bookingModels.getRoomId())) {
 				System.out.println(jwtService.generateBoking(booking.getId()));
 				List<BookingRoom> bookingRoomList = booking.getBookingRooms();
@@ -312,34 +410,44 @@ public class BookingService {
 					// Cập nhật tổng số tiền sau khi giảm giá
 					total = total - discountAmount;
 				}
-				String formattedAmount = NumberFormat.getCurrencyInstance(new Locale("vi", "VN")).format(total);
-				LocalDate startDate = paramServices.convertInstallToLocalDate(booking.getStartAt());
-				LocalDate endDate = paramServices.convertInstallToLocalDate(booking.getEndAt());
-				DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-				String startDateStr = startDate.format(formatter);
-				String endDateStr = endDate.format(formatter);
-				String roomsString = bookingRoomList.stream().map(bookingRoom -> bookingRoom.getRoom().getRoomName()) // Extract
-						// roomName
-						// from// ea// BookingRoom
-						.collect(Collectors.joining(", "));
-				String idBk = "BK" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "TT"
-						+ booking.getId();
-				Boolean flag = (payment.getId() == 1)
-						? paramServices.sendEmails(booking.getAccount().getEmail(), "Xác nhận đặt phòng",
-								paramServices.generateBookingEmail(idBk, booking.getAccount().getFullname(),
-										jwtService.generateBoking(booking.getId()), startDateStr, endDateStr,
-										formattedAmount,
-										roomsString))
-						: false;
-				return booking;
+				//*phân loại phương thức thanh toán, để gửi email hoặc đưa sang trang thanh toán vnpay
+
+				if(booking.getMethodPayment().getId().equals(1)){
+					String formattedAmount = NumberFormat.getCurrencyInstance(new Locale("vi", "VN")).format(total);
+					LocalDate startDate = paramServices.convertInstallToLocalDate(booking.getStartAt());
+					LocalDate endDate = paramServices.convertInstallToLocalDate(booking.getEndAt());
+					DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+					String startDateStr = startDate.format(formatter);
+					String endDateStr = endDate.format(formatter);
+					String roomsString = bookingRoomList.stream().map(bookingRoom -> bookingRoom.getRoom().getRoomName()) // Extract
+							// roomName
+							// from// ea// BookingRoom
+							.collect(Collectors.joining(", "));
+					String idBk = "BK" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "TT"
+							+ booking.getId();
+					ApiResponseDto flag =  paramServices.SendEmails(booking.getAccount().getEmail(), "Xác nhận đặt phòng",
+							paramServices.generateBookingEmail(idBk, booking.getAccount().getFullname(),
+									jwtService.generateBoking(booking.getId()), startDateStr, endDateStr,
+									formattedAmount,
+									roomsString));
+					return new ResponseBookingDTO(201,"Đặt phòng thành công, vui lòng vào email để xác nhận",null,"success");
+				}else{
+					int totalAsInt = (int) total;
+					System.out.println("totals: " + totalAsInt);
+					String baseUrl = request.getScheme() + "://" + request.getServerName() + ":"
+							+ request.getServerPort();
+					return new ResponseBookingDTO(201,"Đặt phòng thành công",
+							  vnPayService.createOrder(totalAsInt, String.valueOf(booking.getId()), baseUrl,request)
+					,"success");
+				}
+
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			throw new RuntimeException(e);
+			return new ResponseBookingDTO(400,"Đặt phòng thất bại: "+e.getMessage(),null,"error");
 		}
 		return null;
 	}
-
 	public accountHistoryDto addBookingOffline(bookingModel bookingModels) {
 		Booking booking = new Booking();
 		Optional<Account> accounts = accountRepository.findByUsername(bookingModels.getUserName());
@@ -932,6 +1040,7 @@ public class BookingService {
 
 			// Cập nhật trạng thái của booking
 			StatusBooking statusBooking = statusBookingRepository.findById(6).orElse(null);
+
 			if (statusBooking == null) {
 				return false; // Không tìm thấy trạng thái booking
 			}
@@ -1008,22 +1117,24 @@ public class BookingService {
 		return null; // Trả về null nếu không có kết quả
 	}
 
-	public Boolean deleteBookings(DeleteBookingModel bookingModels) {
-		// nghia, hàm này được push sáng ngày 18 tháng 12 năm 2024
+
+    public ApiResponseDto deleteBookings(DeleteBookingModel bookingModels){
+		ApiResponseDto apiResponseDto = errorsServices.errorDeleteBooking(bookingModels);
+		if (apiResponseDto != null) {
+			return apiResponseDto;
+		}
 		Booking booking = bookingRepository.findById(bookingModels.getBookingId()).get();
 		StatusBooking statusBooking = statusBookingRepository.findById(6).orElse(null);
 		booking.setStatus(statusBooking);
 		booking.setDescriptions(bookingModels.getDescriptions());
 		try {
 			bookingRepository.save(booking);
-			return true;
+			return new ApiResponseDto(201,"success","Hủy phòng thành công");
 		} catch (Exception e) {
 			e.printStackTrace();
-			return false;
+			return new ApiResponseDto(400,"error","Hủy phòng thất bại");
 		}
-
 	}
-
 	@Transactional
 	public Boolean deleteBookingAndRelatedRooms(Booking booking) {
 		// deleteBookingAndRelatedRooms nghia

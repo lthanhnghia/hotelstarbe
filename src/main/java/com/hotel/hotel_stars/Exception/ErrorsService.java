@@ -4,6 +4,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
 
+import com.hotel.hotel_stars.DTO.ApiResponseDto;
+import com.hotel.hotel_stars.DTO.selectDTO.ResponseBookingDTO;
+import com.hotel.hotel_stars.DTO.selectDTO.ResponseUsersDTO;
 import com.hotel.hotel_stars.Entity.Booking;
 import com.hotel.hotel_stars.Entity.Invoice;
 import com.hotel.hotel_stars.Models.DeleteBookingModel;
@@ -52,7 +55,86 @@ public class ErrorsService {
         return new RoomAvailabilityResponse(true, null);
     }
 
-    public StatusResponseDto errorBooking(bookingModel bookingModels) throws CustomValidationException {
+    public ResponseBookingDTO errorBooking(bookingModel bookingModels) throws CustomValidationException {
+        List<ValidationError> errors = new ArrayList<>();
+        ResponseBookingDTO responseDto = new ResponseBookingDTO();
+        Instant startInstant = paramServices.stringToInstant(bookingModels.getStartDate());
+        Instant endInstant = paramServices.stringToInstant(bookingModels.getEndDate());
+        Optional<Account> account = accountRepository.findByUsername(bookingModels.getUserName());
+        RoomAvailabilityResponse response = isRoomAvailable(bookingModels.getRoomId(), bookingModels.getStartDate(), bookingModels.getEndDate());
+        System.out.println(response.isAllRoomsAvailable());
+
+        Optional<Booking> booking = Optional.empty();
+        if (!account.isPresent()) {
+            responseDto.setCode(400);
+            responseDto.setStatus("error");
+            responseDto.setMessage("Người dùng này không tồn tại");
+            responseDto.setVnPayURL(null);
+            return responseDto;
+        }
+        if (!account.get().getBookingList().isEmpty()) {
+            booking = account.get().getBookingList().stream()
+                    .max(Comparator.comparingInt(Booking::getId));
+            if (booking.isPresent()) {
+                if (booking.get().getStatus().getId() == 1) {
+                    responseDto.setCode(400);
+                    responseDto.setStatus("error");
+                    responseDto.setMessage("Đơn đặt phòng gần đây nhất chưa được bạn xác nhận. Vui lòng kiểm tra.");
+                    responseDto.setVnPayURL(null);
+                    return responseDto;
+                }
+                if (booking.get().getStatus().getId() == 2) {
+                    responseDto.setCode(400);
+                    responseDto.setStatus("error");
+                    responseDto.setMessage("Đơn đặt phòng gần nhất của bạn đang chờ khách sạn xác nhận. Vui lòng đợi.");
+                    responseDto.setVnPayURL(null);
+                    return responseDto;
+                }
+            }
+        }
+        if (bookingModels.getRoomId().size() > 7) {
+            responseDto.setCode(400);
+            responseDto.setStatus("error");
+            responseDto.setMessage("Vui lòng không đặt quá 7 phòng trong một lần.");
+            responseDto.setVnPayURL(null);
+            return responseDto;
+        }
+
+        if (account.get().getPhone() == null || account.get().getPhone().isEmpty()) {
+            responseDto.setCode(400);
+            responseDto.setStatus("error");
+            responseDto.setMessage("Người dùng chưa có số điện thoại");
+            responseDto.setVnPayURL(null);
+            return responseDto;
+        }
+        if (bookingModels.getRoomId().size() <= 0) {
+            responseDto.setCode(400);
+            responseDto.setStatus("error");
+            responseDto.setMessage("Số lượng phòng không được bé hơn hoặc bằng 0");
+            responseDto.setVnPayURL(null);
+            return responseDto;
+        }
+        if (startInstant.isAfter(endInstant)) {
+            responseDto.setCode(400);
+            responseDto.setStatus("error");
+            responseDto.setMessage("Ngày Bắt đầu không nhỏ hơn ngày kết thúc");
+            responseDto.setVnPayURL(null);
+            return responseDto;
+        }
+        if (response.isAllRoomsAvailable() == false) {
+            Room rooms = roomRepository.findById(response.getUnavailableRoomId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng với ID: " + response.getUnavailableRoomId()));
+            errors.add(new ValidationError("room", "Id: " + rooms.getId() + ", " + "Phòng: " + rooms.getRoomName() + ", Loại phòng: " + rooms.getTypeRoom().getTypeRoomName() + ", Đã có người đặt rồi"));
+            responseDto.setCode(400);
+            responseDto.setStatus("error");
+            responseDto.setMessage("Từ: " + bookingModels.getStartDate() + " đến " + bookingModels.getEndDate() + "," + rooms.getRoomName() + ", Đã có người đặt rồi");
+            responseDto.setVnPayURL(null);
+            return responseDto;
+        }
+
+        return null;
+    }
+    public StatusResponseDto errorBookings(bookingModel bookingModels) throws CustomValidationException {
         List<ValidationError> errors = new ArrayList<>();
         StatusResponseDto responseDto = new StatusResponseDto();
         Instant startInstant = paramServices.stringToInstant(bookingModels.getStartDate());
@@ -66,6 +148,7 @@ public class ErrorsService {
             responseDto.setCode("400");
             responseDto.setStatus("error");
             responseDto.setMessage("Người dùng này không tồn tại");
+
             return responseDto;
         }
         if (!account.get().getBookingList().isEmpty()) {
@@ -112,7 +195,8 @@ public class ErrorsService {
             return responseDto;
         }
         if (response.isAllRoomsAvailable() == false) {
-            Room rooms = roomRepository.findById(response.getUnavailableRoomId()).get();
+            Room rooms = roomRepository.findById(response.getUnavailableRoomId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng với ID: " + response.getUnavailableRoomId()));
             errors.add(new ValidationError("room", "Id: " + rooms.getId() + ", " + "Phòng: " + rooms.getRoomName() + ", Loại phòng: " + rooms.getTypeRoom().getTypeRoomName() + ", Đã có người đặt rồi"));
             responseDto.setCode("400");
             responseDto.setStatus("error");
@@ -122,7 +206,6 @@ public class ErrorsService {
 
         return null;
     }
-
     public StatusResponseDto errorFeedBack(FeedbackModel feedbackModel) throws CustomValidationException {
 
         StatusResponseDto responseDto = new StatusResponseDto();
@@ -156,24 +239,24 @@ public class ErrorsService {
         return null;
     }
 
-    public StatusResponseDto errorDeleteBooking(DeleteBookingModel bookingModels) throws CustomValidationException {
-        StatusResponseDto responseDto = new StatusResponseDto();
+    public ApiResponseDto errorDeleteBooking(DeleteBookingModel bookingModels) throws CustomValidationException {
+        ApiResponseDto responseDto = new ApiResponseDto();
         Optional<Booking> booking = bookingRepository.findById(bookingModels.getBookingId());
         if (!booking.isPresent()) {
-            responseDto.setCode("400");
+            responseDto.setCode(400);
             responseDto.setStatus("error");
             responseDto.setMessage("Đơn đặt phòng này không tồn tại");
             return responseDto;
         }
         Integer statusID = booking.get().getStatus().getId();
         if (statusID != 1 && statusID != 2) {
-            responseDto.setCode("400");
+            responseDto.setCode(400);
             responseDto.setStatus("error");
             responseDto.setMessage("Đơn đặt phòng này không thể hủy, Vui lòng liên hệ khách sạn!");
             return responseDto;
         }
         if (bookingModels.getDescriptions().isEmpty() || bookingModels.getDescriptions() == null) {
-            responseDto.setCode("400");
+            responseDto.setCode(400);
             responseDto.setStatus("error");
             responseDto.setMessage("Bạn phải có lý do để hủy phòng!");
             return responseDto;
@@ -182,11 +265,11 @@ public class ErrorsService {
         return null;
     }
 
-    public StatusResponseDto errorRegister(accountModel accountModels) throws CustomValidationException {
-        StatusResponseDto responseDto = new StatusResponseDto();
+    public ApiResponseDto errorRegister(accountModel accountModels) throws CustomValidationException {
+        ApiResponseDto responseDto = new ApiResponseDto();
         Optional<Account> account = accountRepository.findByUsername(accountModels.getUsername());
         if (account.isPresent()) {
-            responseDto.setCode("400");
+            responseDto.setCode(400);
             responseDto.setStatus("error");
             responseDto.setMessage("Tên tài khoản đã tồn tại");
             return responseDto;
@@ -195,16 +278,15 @@ public class ErrorsService {
                 .anyMatch(acc -> acc.getPhone() == accountModels.getPhone());
         System.out.println(isPhoneNumberDuplicate);
         if (isPhoneNumberDuplicate) {
-            responseDto.setCode("400");
+            responseDto.setCode(400);
             responseDto.setStatus("error");
             responseDto.setMessage("Số điện thoại đã tồn tại trong hệ thống");
             return responseDto;
         }
         boolean isEmailDuplicate = accountRepository.findAll().stream()
                 .anyMatch(acc -> acc.getEmail() == accountModels.getEmail());
-
-        if (isEmailDuplicate) {
-            responseDto.setCode("400");
+        if (!isEmailDuplicate) {
+            responseDto.setCode(400);
             responseDto.setStatus("error");
             responseDto.setMessage("Email đã tồn tại trong hệ thống");
             return responseDto;
@@ -290,25 +372,28 @@ public class ErrorsService {
                 .orElse(false);
     }
 
-    public StatusResponseDto errorUpdateProfile(accountModel accountModels) throws CustomValidationException {
-        StatusResponseDto responseDto = new StatusResponseDto();
+    public ResponseUsersDTO errorUpdateProfile(accountModel accountModels) throws CustomValidationException {
+        ResponseUsersDTO responseDto = new ResponseUsersDTO();
         Optional<Account> account = accountRepository.findByUsername(accountModels.getUsername());
         if (!account.isPresent()) {
-            responseDto.setCode("400");
+            responseDto.setCode(400);
             responseDto.setStatus("error");
             responseDto.setMessage("Người dùng này không tồn tại");
+            responseDto.setToken(null);
             return responseDto;
         }
         if (accountModels.getEmail().isEmpty() || accountModels.getEmail() == null) {
-            responseDto.setCode("400");
+            responseDto.setCode(400);
             responseDto.setStatus("error");
             responseDto.setMessage("Email không được trống");
+            responseDto.setToken(null);
             return responseDto;
         }
         if (accountModels.getPhone().isEmpty() || accountModels.getEmail() == null) {
-            responseDto.setCode("400");
+            responseDto.setCode(400);
             responseDto.setStatus("error");
             responseDto.setMessage("Số điện thoại không được để trống");
+            responseDto.setToken(null);
             return responseDto;
         }
 
@@ -319,9 +404,10 @@ public class ErrorsService {
                                         Objects.equals(acc.getPhone(), accountModels.getPhone())       // Kiểm tra trùng số điện thoại
                         );
         if (isPhoneNumberDuplicate) {
-            responseDto.setCode("400");
+            responseDto.setCode(400);
             responseDto.setStatus("error");
             responseDto.setMessage("Số điện thoại đã tồn tại trong hệ thống");
+            responseDto.setToken(null);
             return responseDto;
         }
 
@@ -332,9 +418,10 @@ public class ErrorsService {
                                         Objects.equals(acc.getEmail(), accountModels.getEmail())        // Kiểm tra trùng email
                         );
         if (isEmailDuplicate) {
-            responseDto.setCode("400");
+            responseDto.setCode(400);
             responseDto.setStatus("error");
             responseDto.setMessage("Email đã tồn tại trong hệ thống");
+            responseDto.setToken(null);
             return responseDto;
         }
         return null;

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -407,4 +408,8 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
     ORDER BY bk.id DESC
 """, nativeQuery = true)
 	List<Object[]> findBookingsByAccountIds(@Param("accountId") Integer accountId);
+
+    @Query("SELECT b FROM Booking b WHERE b.status.id IN (1) AND b.createAt <= :threshold")
+    List<Booking> findExpiredBookings(@Param("threshold") LocalDateTime threshold);
+
 }

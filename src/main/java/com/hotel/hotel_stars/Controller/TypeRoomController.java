@@ -192,25 +192,10 @@ public class TypeRoomController {
             @RequestParam(defaultValue = "1") Integer page, // Mặc định là trang 1
             @RequestParam(defaultValue = "10") Integer size // Mặc định là 10 bản ghi/trang
     ) {
-        // Tạo Pageable từ page và size
-        Pageable pageable = PageRequest.of(page - 1, size);
-        Integer processedTypeRoomID = Optional.ofNullable(typeRoomID)
-                .filter(id -> id != 0)
-                .orElse(null);
-        boolean isValidTypeRoomID = typeRoomRepository.existsById(typeRoomID);
-        if (!isValidTypeRoomID) {
-            processedTypeRoomID = null; // Gán NULL nếu typeRoomID không hợp lệ
-        }
-        // Fetch dữ liệu phòng với phân trang từ service
-        Page<FindTypeRoomDto> rooms = trservice.getRoom(startDate, endDate, guestLimit, processedTypeRoomID,pageable);
-        // Lấy tổng số phòng và tổng số trang từ Page object
-        long totalItems = rooms.getTotalElements();
-        int totalPages = rooms.getTotalPages();
 
-        // Tạo đối tượng response chứa dữ liệu phân trang
-        PaginatedResponse<FindTypeRoomDto> response = new PaginatedResponse<>(rooms.getContent(), totalItems, totalPages, page, size);
+        PaginatedResponse<FindTypeRoomDto> rooms = trservice.getRoom(startDate, endDate, guestLimit, typeRoomID,page,size);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(rooms);
     }
         
     @GetMapping("/detail-type-room")

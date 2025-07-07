@@ -14,6 +14,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.hotel.hotel_stars.DTO.*;
+import com.hotel.hotel_stars.DTO.selectDTO.ResponseUsersDTO;
+import com.hotel.hotel_stars.Entity.StatusBooking;
+import com.hotel.hotel_stars.Exception.ErrorsService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -64,7 +67,8 @@ public class AccountService {
 	UserInfoService userInfoService;
 	@Autowired
 	private AuthenticationManager authenticationManager;
-
+	@Autowired
+	private ErrorsService errorsServices;
 	public AccountDto convertToDto(Account account) {
 		// Chuyển đổi Role sang RoleDto
 		RoleDto roleDto = new RoleDto(account.getRole().getId(), account.getRole().getRoleName());
@@ -108,14 +112,14 @@ public class AccountService {
 		return accounts.stream().map(this::convertToDto).toList();
 	}
 
-	public boolean addUser(accountModel accountModels) {
+	public ApiResponseDto addUser(accountModel accountModels) {
 		Account accounts = new Account();
-
-		if (accountModels == null) {
-			return false;
+		ApiResponseDto responseDto = errorsServices.errorRegister(accountModels);
+		if(responseDto!=null){
+			return responseDto;
 		}
 		try {
-			Optional<Role> roles = roleRepository.findById(3);
+			Role roles =roleRepository.findById(3).orElseThrow(() -> new RuntimeException("Role not found"));
 			accounts.setUsername(accountModels.getUsername());
 			accounts.setPasswords(encoder.encode(accountModels.getPasswords()));
 			accounts.setFullname(accountModels.getFullname());
@@ -123,15 +127,15 @@ public class AccountService {
 			accounts.setPhone(accountModels.getPhone());
 			accounts.setAvatar(
 					"https://firebasestorage.googleapis.com/v0/b/myprojectimg-164dd.appspot.com/o/files%2F140aa596-c596-49d4-b679-f2df70845b8d?alt=media&token=54bedd2b-f56f-4b23-8820-cb7e04d43c92");
-			accounts.setRole(roles.get());
+			accounts.setRole(roles);
 			accounts.setIsDelete(true);
 			accounts.setGender(true);
 			accounts.setIsDelete(true);
 			accountRepository.save(accounts);
-			return true;
+			return new ApiResponseDto(201,"success","Đăng ký thành công");
 		} catch (Exception e) {
 			e.printStackTrace();
-			return false;
+			return new ApiResponseDto(400,"success","Đăng ký thất bại: ");
 		}
 	}
 
@@ -393,28 +397,29 @@ public class AccountService {
 		accountRepository.deleteById(id);
 	}
 
-	public Boolean sendEmailUpdatePassword(String email) {
+	public ApiResponseDto sendEmailUpdatePassword(String email) {
 		Optional<Account> accountsObject = accountRepository.findByEmail(email);
+		System.out.println(accountsObject.get().getUsername());
 		if (accountsObject.isEmpty()) {
-			return false;
+			return new ApiResponseDto(400,"error","Email không có trông hệ thống");
 		}
 		paramServices.sendEmails(accountsObject.get().getEmail(), "Đổi mật khẩu ",
 				paramServices.contentEmail(jwtService.generateSimpleToken(email)));
-		return true;
+		 	return new ApiResponseDto(200,"success","Email đặt lại mật khẩu đã được gửi!");
 	}
 
-	public Map<String, String> changeUpdatePass(changePasswordModel changePasswordModels) {
-		Map<String, String> response = new HashMap<>();
+	public ApiResponseDto changeUpdatePass(changePasswordModel changePasswordModels) {
+		ApiResponseDto response = new ApiResponseDto();
 		Optional<Account> accounts = accountRepository.findByUsername(changePasswordModels.getUsername());
 		if (!accounts.isPresent()) {
-			response = paramServices.messageSuccessApi(400, "error", "tài khoản này không tồn tại");
+			response = paramServices.responseDtoApi(400, "error", "tài khoản này không tồn tại");
 		} else if (!encoder.matches(changePasswordModels.getPassword(), accounts.get().getPasswords())) {
-			response = paramServices.messageSuccessApi(400, "error", "mật khẩu cũ không đúng");
+			response = paramServices.responseDtoApi(400, "error", "mật khẩu cũ không đúng");
 		} else if (!changePasswordModels.getResetPassword().equals(changePasswordModels.getConfirmPassword())) {
-			response = paramServices.messageSuccessApi(400, "error", "mật khẩu và xác nhận mật khẩu không đúng");
+			response = paramServices.responseDtoApi(400, "error", "mật khẩu và xác nhận mật khẩu không đúng");
 		} else {
 			try {
-				response = paramServices.messageSuccessApi(200, "success", "Đổi mật khẩu thành công");
+				response = paramServices.responseDtoApi(200, "success", "Đổi mật khẩu thành công");
 				String password = encoder.encode(changePasswordModels.getResetPassword());
 				accounts.get().setPasswords(password);
 				accountRepository.save(accounts.get());
@@ -450,36 +455,29 @@ public class AccountService {
 		return accountInfo;
 	}
 
-	public String loginGG(String email) {
-		System.out.println("tham số vào: " + email);
-		Account accounts = new Account();
-		List<Account> listAccount = accountRepository.findAll();
-		accounts = paramServices.getTokenGG(email);
-		System.out.println(accounts.getUsername());
+	public ResponseUsersDTO loginGG(String email) {
 
+		Account accounts = new Account();
+		accounts = paramServices.getTokenGG(email);
 		if (accounts.getEmail() == null) {
-			System.out.println("null rôì");
-			return null;
+			return new ResponseUsersDTO(400,"Đăng nhập thất bại",
+					null,"error");
 		}
 
 		try {
-			System.out.println("accoutGmail: " + accounts.getEmail());
-			System.out.println("accoutUserName: " + accounts.getUsername());
 			Optional<Account> getAccounts = accountRepository.findByUsername(accounts.getUsername());
 
 			if (getAccounts.isPresent()) {
-				System.out.println("tài khoản: " + getAccounts.get().getUsername());
-				System.out.println("có tài khoản");
-				return jwtService.generateToken(accounts.getUsername());
+				return new ResponseUsersDTO(200,"Đăng nhập thành công",
+						jwtService.generateToken(accounts.getUsername()),"success");
 			} else {
-
-				System.out.println("không có tài khoản: " + accounts.getUsername());
-				accountRepository.save(accounts);
-				return jwtService.generateToken(accounts.getUsername());
+				return new ResponseUsersDTO(200,"Đăng nhập thành công",
+						jwtService.generateToken(accounts.getUsername()),"success");
 			}
 		} catch (Exception e) {
 			System.out.println("Error: " + e.getMessage());
-			return null;
+			return new ResponseUsersDTO(400,"Đăng nhập thất bại, email này đã tồn tại",
+					null,"error");
 		}
 	}
 
@@ -720,10 +718,10 @@ public class AccountService {
 		}
 	}
 
-	public boolean updateProfileCustomer(accountModel accountModels) {
-		System.out.println(accountModels);
-		if (accountModels == null) {
-			return false;
+	public ResponseUsersDTO updateProfileCustomer(accountModel accountModels) {
+		ResponseUsersDTO statusResponseDto = errorsServices.errorUpdateProfile(accountModels);
+		if(statusResponseDto!=null){
+			return statusResponseDto;
 		}
 		Optional<Account> getAccount = accountRepository.findByUsername(accountModels.getUsername());
 		getAccount.get().setEmail(accountModels.getEmail());
@@ -733,10 +731,12 @@ public class AccountService {
 		getAccount.get().setAvatar(accountModels.getAvatar());
 		try{
 			accountRepository.save(getAccount.get());
-			return true;
+			return new ResponseUsersDTO(201,"Cập nhật thành công",
+					jwtService.generateToken(getAccount.get().getUsername()),
+					"success");
 		} catch (Exception e) {
 			e.printStackTrace();
-			return false;
+			return new ResponseUsersDTO(400,"Cập nhật thành công",null,"error");
 		}
 	}
 }
