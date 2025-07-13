@@ -45,40 +45,7 @@ public class ChatService {
 
     public String chat(String prompt) {
         // Lấy thông tin khách sạn từ session hoặc từ DB
-        Map<String, String> dateMap = extractBookingDates(prompt);
-        String startDate = dateMap.get("startDate");
-        String endDate = dateMap.get("endDate");
-        // --- Bước 2: Quản lý cache thông tin phòng trống trong Session ---
-        List<HotelRoomDTO> hotelRoom = null;
-        String roomSessionKey = "hotelRooms_" + startDate + "_" + endDate; // Key cache theo ngày
 
-        if (!startDate.isEmpty() && !endDate.isEmpty()) { // Chỉ cache nếu có ngày hợp lệ
-            hotelRoom = (List<HotelRoomDTO>) session.getAttribute(roomSessionKey);
-
-            if (hotelRoom == null) {
-                // logger.info("Đang truy vấn thông tin phòng trống từ DB cho ngày {} đến {}", startDate, endDate);
-                System.out.println("Đang truy vấn thông tin phòng trống từ DB cho ngày " + startDate + " đến " + endDate);
-                hotelRoom = hotelService.getHotelRoom(startDate, endDate, null, null);
-                if (hotelRoom != null && !hotelRoom.isEmpty()) {
-                    session.setAttribute(roomSessionKey, hotelRoom);
-                    // logger.info("Đã lưu thông tin phòng trống vào session cache với key: {}", roomSessionKey);
-                    System.out.println("Đã lưu thông tin phòng trống vào session cache với key: " + roomSessionKey);
-                } else {
-                    // logger.info("Không tìm thấy phòng trống hoặc lỗi truy vấn cho ngày {} đến {}", startDate, endDate);
-                    System.out.println("Không tìm thấy phòng trống hoặc lỗi truy vấn cho ngày " + startDate + " đến " + endDate);
-                    // Có thể lưu một list rỗng để tránh truy vấn lại nếu chắc chắn không có phòng
-                    // session.setAttribute(roomSessionKey, new ArrayList<HotelRoomDTO>());
-                }
-            } else {
-                // logger.info("Lấy thông tin phòng trống từ session cache với key: {}", roomSessionKey);
-                System.out.println("Lấy thông tin phòng trống từ session cache với key: " + roomSessionKey);
-            }
-        } else {
-            // Nếu không có startDate hoặc endDate hợp lệ, coi như không có thông tin phòng trống
-            hotelRoom = new ArrayList<>(); // Gán một list rỗng để tránh NullPointerException
-            // logger.info("Không có ngày hợp lệ để truy vấn thông tin phòng trống. Trả về danh sách rỗng.");
-            System.out.println("Không có ngày hợp lệ để truy vấn thông tin phòng trống. Trả về danh sách rỗng.");
-        }
         HotelInfoDTO hotelInfo = (HotelInfoDTO) session.getAttribute("hotelInfo");
         if (hotelInfo == null) {
             hotelInfo = hotelService.getHotelFullInfo();
@@ -89,7 +56,7 @@ public class ChatService {
         }
         // Định dạng dữ liệu khách sạn
         String hotelInfoContext = formatHotelInfo(hotelInfo);
-        String hotelRoomContext = formatHotelRoomListForPrompt(hotelRoom);
+
         String structuredPrompt = """
 
 Bạn đóng vai trò là một nhân viên tư vấn và chăm sóc khách hàng chuyên nghiệp trong lĩnh vực khách sạn, có hơn 3 năm kinh nghiệm làm việc thực tế.
@@ -112,13 +79,11 @@ Mục tiêu: Trả lời khách ngắn gọn, rõ ràng, đúng trọng tâm, th
 - Giá phòng được tính theo ngày lưu trú không tính theo đêm, không theo giờ.
 [Thông tin khách sạn]
 %s
-[Thông tin truy vấn ]
-%s
 [Câu hỏi của khách hàng]
 %s
 **Trường hợp không liên quan:**  
 Nếu khách hỏi nội dung không liên quan đến dịch vụ khách sạn, hãy từ chối nhẹ nhàng và gợi ý quay lại chủ đề phù hợp, ví dụ: "Mình xin phép chỉ hỗ trợ các nội dung liên quan đến dịch vụ khách sạn, bạn cần hỗ trợ đặt phòng hay thông tin gì thêm không ạ?"
-""".formatted(hotelInfoContext,hotelRoom.toString(),prompt);
+""".formatted(hotelInfoContext,prompt);
 
         // Tạo request body JSON
         String fullPrompt = getPromptBody(structuredPrompt);
