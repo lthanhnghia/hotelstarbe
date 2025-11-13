@@ -40,7 +40,7 @@ public class vnPayController {
         } catch (Exception e) {
             e.printStackTrace();
             try {
-                response.sendRedirect("https://hotelstar.vercel.app/client/booking-room?status=error&message=Lỗi hệ thống");
+                response.sendRedirect("http://localhost:3000/client/booking-room?status=error&message=Lỗi hệ thống");
             } catch (IOException ioException) {
                 throw new RuntimeException(ioException);
             }

@@ -1,5 +1,7 @@
 package com.hotel.hotel_stars.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -27,10 +29,14 @@ public class BookingRoomServiceHotel {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "booking_room_id")
+    @JsonIgnore
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private BookingRoom bookingRoom;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service_hotel_id")
+    @JsonIgnore
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private ServiceHotel serviceHotel;
 
 }

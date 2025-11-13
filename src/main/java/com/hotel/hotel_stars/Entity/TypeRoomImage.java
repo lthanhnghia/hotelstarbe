@@ -1,5 +1,7 @@
 package com.hotel.hotel_stars.Entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,5 +21,7 @@ public class TypeRoomImage {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "type_room_id")
+    @JsonBackReference
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private TypeRoom typeRoom;
 }

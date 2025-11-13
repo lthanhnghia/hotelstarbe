@@ -1,5 +1,6 @@
 package com.hotel.hotel_stars.Service;
 
+
 import com.hotel.hotel_stars.DTO.HotelInfoDTO;
 import com.hotel.hotel_stars.DTO.HotelRoomDTO;
 import jakarta.servlet.http.HttpSession;
@@ -29,7 +30,7 @@ import java.util.Map;
 @Service
 public class ChatService {
     private static final Logger logger = LoggerFactory.getLogger(ChatService.class);
-    private static final String GEMINI_MODEL = "gemini-1.5-flash";
+    private static final String GEMINI_MODEL = "gemini-2.5-flash";
 
     @Autowired
     private HotelService hotelService;
@@ -39,6 +40,8 @@ public class ChatService {
 
     @Value("${gemini.api.key}")
     private String apiKey;
+
+
 
     // Dùng danh sách lưu lịch sử hội thoại dạng role-based
     private List<Map<String, String>> conversationHistory = new ArrayList<>();
@@ -58,19 +61,18 @@ public class ChatService {
         String hotelInfoContext = formatHotelInfo(hotelInfo);
 
         String structuredPrompt = """
+Bạn là một trợ lý tư vấn khách hàng ảo chuyên nghiệp trong lĩnh vực khách sạn.
 
-Bạn đóng vai trò là một nhân viên tư vấn và chăm sóc khách hàng chuyên nghiệp trong lĩnh vực khách sạn, với hơn 3 năm kinh nghiệm hỗ trợ khách trực tuyến.
-
- Mục tiêu: Trả lời khách ngắn gọn, rõ ràng, đúng trọng tâm, thể hiện sự thân thiện và chuyên nghiệp.
+ Mục tiêu: Trả lời khách ngắn gọn, rõ ràng, đúng trọng tâm, thể hiện sự chuyên nghiệp và hữu ích.
 
  **Quy tắc khi phản hồi:**
 - Chỉ trả lời trong phạm vi thông tin được cung cấp trong phần [Thông tin khách sạn]. Không bịa đặt hoặc suy đoán.
 - Trả lời tối đa 4–5 câu, rõ ràng và dễ hiểu.
 - Trả lời đúng trọng tâm câu hỏi. Ví dụ: nếu khách hỏi “khách sạn có bãi đậu xe không?”, thì chỉ cần trả lời đúng nội dung đó.
-- Không yêu cầu khách truy cập website. Bạn đang hỗ trợ trực tiếp tại đây.
-- Nếu thông tin chưa có sẵn, hãy trả lời lịch sự: "Hiện tại hệ thống chưa có thông tin này, bạn vui lòng cho biết thêm chi tiết để hỗ trợ tốt hơn ạ."
-- Giữ giọng văn thân thiện, tự nhiên, chuyên nghiệp như đang trò chuyện thật.
-
+- Không yêu cầu khách truy cập website.
+- Nếu thông tin chưa có sẵn, hãy trả lời lịch sự: "Hiện tại hệ thống chưa có thông tin này, bạn vui lòng cung cấp thêm chi tiết hoặc đặt câu hỏi khác để tôi hỗ trợ tốt hơn ạ."
+- Giữ giọng văn **chuyên nghiệp, lịch sự và thân thiện**.
+- Chỉ tư vấn khách hàng về dịch vụ khách sạn; không hỗ trợ khách đặt phòng hoặc thực hiện giao dịch.
  **Thông tin cố định về thời gian (áp dụng cho mọi khách sạn):**
 - Giờ nhận phòng (Check-in): từ 14h00 (2:00 PM)
 - Giờ trả phòng (Check-out): trước 12h00 trưa (12:00 PM)
@@ -82,9 +84,8 @@ Bạn đóng vai trò là một nhân viên tư vấn và chăm sóc khách hàn
 [Câu hỏi của khách hàng]
 %s
 
-❗**Trường hợp không liên quan:**  
-Nếu khách hỏi nội dung không liên quan đến dịch vụ khách sạn, hãy từ chối nhẹ nhàng:  
-"Mình xin phép chỉ hỗ trợ các nội dung liên quan đến dịch vụ khách sạn, bạn cần hỗ trợ đặt phòng hay thông tin gì thêm không ạ?"
+❗**Trường hợp không liên quan:** Nếu khách hỏi nội dung không liên quan đến dịch vụ khách sạn, hãy từ chối nhẹ nhàng:  
+"Tôi xin phép chỉ hỗ trợ các nội dung liên quan đến dịch vụ khách sạn. Bạn cần thêm thông tin gì về khách sạn không ạ?"
 """.formatted(hotelInfoContext, prompt);
 
 
@@ -103,7 +104,8 @@ Nếu khách hỏi nội dung không liên quan đến dịch vụ khách sạn,
         // Perform HTTP POST request
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<String> responseEntity = restTemplate.exchange(
-                "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent?key=" + apiKey,
+                "https://generativelanguage.googleapis.com/v1beta/models/"
+                        + GEMINI_MODEL + ":generateContent?key=" + apiKey,
                 HttpMethod.POST,
                 requestEntity,
                 String.class
@@ -201,145 +203,9 @@ Nếu khách hỏi nội dung không liên quan đến dịch vụ khách sạn,
                 + info.getHotelServices() + "\n"
                 + info.getHotelAmenities();
     }
-    public Map<String, String> extractBookingDates(String userQuestion) {
-        LocalDate today = LocalDate.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-        // Prompt hướng dẫn mô hình hiểu và chuyển đổi ngày mơ hồ sang định dạng cụ thể
-        String prompt = """
-Trích xuất ngày bắt đầu và ngày kết thúc đặt phòng từ câu hỏi dưới đây.
+    // Tùy chọn: reset lịch sử
 
-Nếu người dùng nói các cụm mơ hồ như "hôm nay", "ngày mai", "cuối tuần", "thứ 7 tuần sau"... bạn cần chuyển chúng sang định dạng ngày cụ thể theo định dạng yyyy-MM-dd dựa trên ngày hiện tại là %s.
 
-Chỉ trả về JSON có cấu trúc:
-{
-  "startDate": "yyyy-MM-dd",
-  "endDate": "yyyy-MM-dd"
-}
-Nếu không tìm thấy ngày nào thì trả về {"startDate": "", "endDate": ""}
-
-Câu hỏi: %s
-""".formatted(today.format(formatter), userQuestion); // Sử dụng today.format(formatter) để đảm bảo định dạng đúng
-
-        // Tạo request JSON theo cấu trúc Gemini API
-        List<Map<String, Object>> contents = new ArrayList<>();
-        Map<String, Object> userPart = new HashMap<>();
-        userPart.put("text", prompt);
-        Map<String, Object> userMessage = new HashMap<>();
-        userMessage.put("role", "user");
-        userMessage.put("parts", List.of(userPart));
-        contents.add(userMessage);
-
-        JSONObject requestJson = new JSONObject();
-        requestJson.put("contents", contents);
-
-        // Định nghĩa cấu trúc JSON mong muốn trong generationConfig
-        Map<String, Object> generationConfig = new HashMap<>();
-        generationConfig.put("temperature", 0.0);
-        generationConfig.put("topP", 0.9);
-        generationConfig.put("responseMimeType", "application/json"); // Yêu cầu phản hồi là JSON
-
-        // Định nghĩa schema cho JSON trả về
-        Map<String, Object> responseSchema = new HashMap<>();
-        responseSchema.put("type", "OBJECT");
-        Map<String, Object> properties = new HashMap<>();
-
-        Map<String, Object> startDateProp = new HashMap<>();
-        startDateProp.put("type", "STRING");
-        properties.put("startDate", startDateProp);
-
-        Map<String, Object> endDateProp = new HashMap<>();
-        endDateProp.put("type", "STRING");
-        properties.put("endDate", endDateProp);
-
-        responseSchema.put("properties", properties);
-        responseSchema.put("propertyOrdering", List.of("startDate", "endDate")); // Đảm bảo thứ tự các thuộc tính
-
-        generationConfig.put("responseSchema", responseSchema);
-        requestJson.put("generationConfig", generationConfig);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> requestEntity = new HttpEntity<>(requestJson.toJSONString(), headers);
-
-        RestTemplate restTemplate = new RestTemplate();
-
-        try {
-            ResponseEntity<String> responseEntity = restTemplate.exchange(
-                    "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent?key=" + apiKey,
-                    HttpMethod.POST,
-                    requestEntity,
-                    String.class
-            );
-
-            if (responseEntity.getStatusCode() == HttpStatus.OK) {
-                String rawJson = responseEntity.getBody();
-
-                // Khi sử dụng responseMimeType và responseSchema, phản hồi trực tiếp là JSON
-                // mà không cần phải trích xuất từ "parts[0].text" nữa.
-                // Mô hình sẽ trả về một đối tượng JSON trực tiếp trong "candidates[0].content.parts[0].text"
-                // nhưng với cấu trúc JSON đã được đảm bảo bởi responseSchema.
-                // Vì vậy, ta vẫn cần parse rawJson để lấy phần text chứa JSON.
-                JSONObject jsonObject = (JSONObject) new JSONParser().parse(rawJson);
-                JSONArray candidates = (JSONArray) jsonObject.get("candidates");
-                if (candidates != null && !candidates.isEmpty()) {
-                    JSONObject firstCandidate = (JSONObject) candidates.get(0);
-                    JSONObject content = (JSONObject) firstCandidate.get("content");
-                    if (content != null) {
-                        JSONArray parts = (JSONArray) content.get("parts");
-                        if (parts != null && !parts.isEmpty()) {
-                            JSONObject part = (JSONObject) parts.get(0);
-                            String jsonText = (String) part.get("text"); // Đây sẽ là chuỗi JSON trực tiếp
-
-                            // Parse chuỗi JSON bên trong
-                            JSONObject dateJson = (JSONObject) new JSONParser().parse(jsonText);
-
-                            String startDate = (String) dateJson.getOrDefault("startDate", "");
-                            String endDate = (String) dateJson.getOrDefault("endDate", "");
-
-                            Map<String, String> result = new HashMap<>();
-                            result.put("startDate", startDate);
-                            result.put("endDate", endDate);
-                            return result;
-                        }
-                    }
-                }
-                // Nếu không tìm thấy cấu trúc mong muốn
-                // logger.warn("Không tìm thấy cấu trúc JSON mong muốn trong phản hồi API.");
-                return Map.of("startDate", "", "endDate", "");
-
-            } else {
-                // logger.error("extractBookingDates API thất bại, status: {}", responseEntity.getStatusCodeValue());
-                System.err.println("extractBookingDates API thất bại, status: " + responseEntity.getStatusCodeValue());
-            }
-        } catch (ParseException e) {
-            // logger.error("Lỗi parse JSON từ phản hồi API", e);
-            System.err.println("Lỗi parse JSON từ phản hồi API: " + e.getMessage());
-        } catch (Exception e) {
-            // logger.error("Lỗi gọi extractBookingDates API", e);
-            System.err.println("Lỗi gọi extractBookingDates API: " + e.getMessage());
-        }
-
-        // Trả về mặc định nếu lỗi
-        return Map.of("startDate", "", "endDate", "");
-    }
-    private String formatHotelRoomListForPrompt(List<HotelRoomDTO> rooms) {
-        if (rooms == null || rooms.isEmpty()) {
-            return "Hiện tại không có phòng trống nào.";
-        }
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("Danh sách phòng trống hiện có:\n");
-        for (HotelRoomDTO room : rooms) {
-            sb.append(String.format("- Loại phòng: %s (ID: %d)\n", room.getRoomTypeName(), room.getRoomTypeId()));
-            sb.append(String.format("  + Số lượng phòng trống: %d\n", room.getAvailableRoomCount()));
-            sb.append(String.format("  + Sức chứa khách: %d người\n", room.getGuestLimits()));
-            sb.append(String.format("  + Giá: %.0f VND/ngày\n", room.getPriceTypeRoom()));
-            sb.append(String.format("  + Tiện nghi: %s\n", String.join(", ", room.getAmenitiesList())));
-            sb.append(String.format("  + Mô tả: %s\n", room.getDescribe()));
-            sb.append("\n"); // Thêm dòng trống để dễ đọc
-        }
-        return sb.toString();
-    }
 }
 

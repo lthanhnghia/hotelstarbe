@@ -1,5 +1,6 @@
 package com.hotel.hotel_stars.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -27,5 +28,6 @@ public class TypeServiceRoom {
     String duration;
 
     @OneToMany(mappedBy = "typeServiceRoomId", fetch=FetchType.LAZY)
+    @JsonIgnore
     private Set<ServiceRoom> serviceRooms = new LinkedHashSet<>();
 }

@@ -1,5 +1,6 @@
 package com.hotel.hotel_stars.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,6 +21,7 @@ public class AmenitiesTypeRoom {
     private String amenitiesTypeRoomName;
 
     @OneToMany(mappedBy = "amenitiesTypeRoom")
+    @JsonIgnore
     List<TypeRoomAmenitiesTypeRoom > typeRoomAmenitiesTypeRoomList;
 
 }

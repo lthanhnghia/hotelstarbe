@@ -203,6 +203,7 @@ public class VNPayService {
             try {
                 String paymentStatuss = "success";
                 String messages = "Bạn đã đặt phòng thành công vui lòng vào email để xem chi tiết đơn đặt hàng ";
+                System.out.println(paymentStatuss+" _ "+messages);
                 redirectUrl = String.format(
                         "https://hotelstar.vercel.app/client/booking-room?status=%s&message=%s",
                         URLEncoder.encode(paymentStatuss, "UTF-8"),

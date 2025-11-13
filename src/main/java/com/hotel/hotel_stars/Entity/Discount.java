@@ -1,5 +1,7 @@
 package com.hotel.hotel_stars.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,9 +36,12 @@ public class Discount {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "type_room_id")
+    @JsonIgnore
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private TypeRoom typeRoom;
 
     @OneToMany(mappedBy = "discount")
+    @JsonIgnore
     List<DiscountAccount> discountAccounts;
 
 }

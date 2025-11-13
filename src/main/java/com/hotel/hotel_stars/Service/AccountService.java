@@ -16,10 +16,14 @@ import java.util.stream.Collectors;
 import com.hotel.hotel_stars.DTO.*;
 import com.hotel.hotel_stars.DTO.selectDTO.ResponseUsersDTO;
 import com.hotel.hotel_stars.Entity.StatusBooking;
+import com.hotel.hotel_stars.Entity.TypeRoom;
 import com.hotel.hotel_stars.Exception.ErrorsService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -69,6 +73,11 @@ public class AccountService {
 	private AuthenticationManager authenticationManager;
 	@Autowired
 	private ErrorsService errorsServices;
+	public Page<TypeRoom> getRoomTest(int pageNumber,int pageSize){
+		Pageable pageable = PageRequest.of(pageNumber,pageSize);
+		Page<TypeRoom> reponse = typeRoomRepository.findAll(pageable);
+		return reponse;
+	}
 	public AccountDto convertToDto(Account account) {
 		// Chuyển đổi Role sang RoleDto
 		RoleDto roleDto = new RoleDto(account.getRole().getId(), account.getRole().getRoleName());

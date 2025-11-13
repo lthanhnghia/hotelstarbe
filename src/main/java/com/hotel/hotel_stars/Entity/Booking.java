@@ -1,5 +1,7 @@
 package com.hotel.hotel_stars.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -44,24 +46,30 @@ public class Booking {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "method_payment_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private MethodPayment methodPayment;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Account account;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "status_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private StatusBooking status;
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL)
+    @JsonIgnore
     List<BookingRoom> bookingRooms  = new ArrayList<>();
     
     @OneToMany(mappedBy = "booking")
     @JsonManagedReference
+    @JsonIgnore
     List<Invoice> invoice;
 
     @OneToMany(mappedBy = "booking")
+    @JsonIgnore
     List<Invoice> invoices;
 
 

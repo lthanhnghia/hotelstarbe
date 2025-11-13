@@ -1,5 +1,8 @@
 package com.hotel.hotel_stars.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -36,12 +39,15 @@ public class TypeRoom {
     private String describes;
 
     @OneToMany(mappedBy = "typeRoom")
+    @JsonManagedReference
+    @JsonIgnore
     List<TypeRoomImage> typeRoomImages;
 
     @OneToMany(mappedBy = "typeRoom")
     List<Discount> discountList;
 
     @OneToMany(mappedBy = "typeRoom")
+    @JsonIgnore
     List<TypeRoomAmenitiesTypeRoom> typeRoomAmenitiesTypeRoomList;
 
     @OneToMany(mappedBy = "typeRoom")
@@ -53,6 +59,7 @@ public class TypeRoom {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "type_bed_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private TypeBed typeBed;
 
 }

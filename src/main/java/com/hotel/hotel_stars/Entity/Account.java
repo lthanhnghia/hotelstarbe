@@ -1,5 +1,6 @@
 package com.hotel.hotel_stars.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -47,11 +48,14 @@ public class Account {
     private Role role;
 
     @OneToMany(mappedBy = "account")
+    @JsonIgnore
     List<Booking> bookingList;
 
     @OneToMany(mappedBy = "account")
+    @JsonIgnore
     List<BookingRoom> bookingRooms;
 
     @OneToMany(mappedBy = "account")
+    @JsonIgnore
     List<DiscountAccount> discountAccounts;
 }

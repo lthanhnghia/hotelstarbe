@@ -58,10 +58,8 @@ public class SecurityConfig {
                     return configuration;
                 }))
                 .authorizeHttpRequests(auth -> auth
-                                .requestMatchers("/api/account/login").authenticated()
-                                .requestMatchers("/api/account/changepassword").authenticated()
-                                // -------------------------- code này dành cho mấy cái api không cần
-                                // token
+                .requestMatchers("/ws/**", "/topic/**", "/app/**").permitAll()
+
 
                                                 // All
                                                 .requestMatchers("/api/service-package/post-service-package")
@@ -147,7 +145,9 @@ public class SecurityConfig {
                                                                 "/api/image/getAll",
                                                                 "/api/service-hotel/getAll",
                                                                 "/api/discount-accounts/getAll",
-                                                                "/api/booking/room-usage"
+                                                                "/api/booking/room-usage",
+                                                                "/api/overview/room-types/bed-type-options/find-type-room"
+                                                             ,"/ws","/topic/**","/app/**"
                                                                 )
                                                 .permitAll()
 

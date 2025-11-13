@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TypeRoomRepository extends JpaRepository<TypeRoom, Integer> {
-
+    Page<TypeRoom> findAll(Pageable pageable);
     // @Query(value = """
     // SELECT
     // r.id AS roomId,
