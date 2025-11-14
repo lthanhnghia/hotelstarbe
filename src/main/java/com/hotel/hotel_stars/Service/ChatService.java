@@ -38,8 +38,8 @@ public class ChatService {
     @Autowired
     private HttpSession session;
 
-    @Value("${gemini.api.key}")
-    private String apiKey;
+
+    private String apiKey="AIzaSyB6qbLOayN4mAZAhesuoDZ-6kt3TdSrsSg";
 
 
 
