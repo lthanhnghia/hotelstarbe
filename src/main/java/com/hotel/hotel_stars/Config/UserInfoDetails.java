@@ -36,12 +36,12 @@ public class UserInfoDetails implements UserDetails {
                 roles = "Admin";
             }
         }
-        System.out.println(roles+"2222");
+
         if (!roles.isEmpty()) {
             authorities = Arrays.stream(roles.split(","))
                     .map(SimpleGrantedAuthority::new)
                     .collect(Collectors.toList());
-            System.out.println(authorities);
+
         } else {
             authorities = new ArrayList<>(); // Hoặc ném ngoại lệ nếu không có quyền
             System.out.println(authorities+"2");

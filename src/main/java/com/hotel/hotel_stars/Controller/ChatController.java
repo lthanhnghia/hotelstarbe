@@ -9,10 +9,12 @@ import com.hotel.hotel_stars.Service.AccountService;
 import com.hotel.hotel_stars.Service.ChatService;
 import com.hotel.hotel_stars.Service.HotelService;
 import com.hotel.hotel_stars.Service.TypeRoomService;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -38,5 +40,7 @@ public class ChatController {
     public String ping() {
         return "pong";
     }
+
+
 
 }

@@ -464,31 +464,25 @@ public class AccountService {
 		return accountInfo;
 	}
 
-	public ResponseUsersDTO loginGG(String email) {
+	public ResponseUsersDTO loginGG(String googleToken) {
 
-		Account accounts = new Account();
-		accounts = paramServices.getTokenGG(email);
+		Account accounts = paramServices.getTokenGG(googleToken);
 		if (accounts.getEmail() == null) {
-			return new ResponseUsersDTO(400,"Đăng nhập thất bại",
-					null,"error");
+			return new ResponseUsersDTO(400, "Đăng nhập thất bại", null, "error");
 		}
 
-		try {
-			Optional<Account> getAccounts = accountRepository.findByUsername(accounts.getUsername());
+		Account account = accountRepository
+				.findByEmail(accounts.getEmail())
+				.orElseGet(() -> accountRepository.save(accounts));
 
-			if (getAccounts.isPresent()) {
-				return new ResponseUsersDTO(200,"Đăng nhập thành công",
-						jwtService.generateToken(accounts.getUsername()),"success");
-			} else {
-				return new ResponseUsersDTO(200,"Đăng nhập thành công",
-						jwtService.generateToken(accounts.getUsername()),"success");
-			}
-		} catch (Exception e) {
-			System.out.println("Error: " + e.getMessage());
-			return new ResponseUsersDTO(400,"Đăng nhập thất bại, email này đã tồn tại",
-					null,"error");
-		}
+		return new ResponseUsersDTO(
+				200,
+				"Đăng nhập thành công",
+				jwtService.generateToken(account.getUsername()),
+				"success"
+		);
 	}
+
 
 	public List<AccountRoleDTOs> getAccountRoles() {
 		return accountRepository.findAccountsWithRoleStaff();
@@ -557,6 +551,7 @@ public class AccountService {
                     new UsernamePasswordAuthenticationToken(username, password));
             return jwtService.generateToken(username);
         } catch (Exception e) {
+			System.out.println("lỗi đăng nhập: "+e.getMessage());
             return null;
         }
     }

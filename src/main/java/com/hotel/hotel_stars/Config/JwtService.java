@@ -9,12 +9,14 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.io.Encoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
+import javax.crypto.SecretKey;
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
@@ -29,8 +31,8 @@ public class JwtService {
      @Autowired
      BookingRepository bookingRepository;
 
-    public static final String SECRET = "5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437";
-
+ /*   public static final String SECRET = "5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437";*/
+   public static final String SECRET = "MjkVhpvE/QmeNruBwE+NSUnIN7kgz7+udKKVah6L5CQ=";
     public String generateToken(String userName) {
         Map<String, Object> claims = new HashMap<>();
         return createToken(claims, userName);
@@ -42,8 +44,8 @@ public class JwtService {
         user.ifPresent(u -> {
             claims.put("id",u.getId());
             claims.put("username",u.getUsername());
-            claims.put("role",u.getRole().getRoleName());
-            claims.put("phone",u.getPhone());
+            claims.put("rle",u.getRole().getRoleName());
+            claims.put("phoone",u.getPhone());
             claims.put("email",u.getEmail());
             claims.put("avatar",u.getAvatar());
             claims.put("gender",u.getGender());
@@ -65,7 +67,11 @@ public class JwtService {
     }
 
     private Key getSignKey() {
+
         byte[] keyBytes = Decoders.BASE64.decode(SECRET);
+       /* SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+        String base64 = Encoders.BASE64.encode(key.getEncoded());
+        System.out.println("Your Base64 Secret: " + base64);*/
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
@@ -80,9 +86,7 @@ public class JwtService {
         return extractClaim(token, claims -> (Integer) claims.get("id"));
     }
 
-    public Integer extractQuantityRoom(String token) {
-        return extractClaim(token, claims -> (Integer) claims.get("quantityRoom"));
-    }
+
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);

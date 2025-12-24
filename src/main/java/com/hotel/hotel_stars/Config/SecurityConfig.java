@@ -191,7 +191,8 @@ public class SecurityConfig {
                                                                 "/api/amenitiesHotel/update",
                                                                 "/api/amenitiesHotel/delete/**",
                                                                 "/api/amenitiesHotel/add",
-                                                                "/api/discount/post-discount")
+                                                                "/api/discount/post-discount"
+                                                                )
                                                 .hasAnyAuthority("Staff", "HotelOwner")
                                                 // --------------------------- api cần token có phân quyền HotelOwner
                                                 // (chủ khách sạn )
