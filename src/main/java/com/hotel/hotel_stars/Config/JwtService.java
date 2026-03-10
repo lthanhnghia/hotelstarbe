@@ -44,7 +44,7 @@ public class JwtService {
         user.ifPresent(u -> {
             claims.put("id",u.getId());
             claims.put("username",u.getUsername());
-            claims.put("rle",u.getRole().getRoleName());
+            claims.put("role",u.getRole().getRoleName());
             claims.put("phoone",u.getPhone());
             claims.put("email",u.getEmail());
             claims.put("avatar",u.getAvatar());
