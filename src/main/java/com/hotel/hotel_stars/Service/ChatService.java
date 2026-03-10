@@ -39,7 +39,8 @@ public class ChatService {
     private HttpSession session;
 
 
-    private String apiKey="AIzaSyB6qbLOayN4mAZAhesuoDZ-6kt3TdSrsSg";
+    @Value("${gemini.api.key}")
+    private String apiKey;
 
 
 
